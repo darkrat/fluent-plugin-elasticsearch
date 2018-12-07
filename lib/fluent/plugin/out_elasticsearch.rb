@@ -259,11 +259,6 @@ EOC
       raise Fluent::ConfigError, "You must install #{@http_backend} gem."
     end
 
-    def detect_es_major_version
-      @_es_info ||= client.info
-      @_es_info["version"]["number"].to_i
-    end
-
     def client_library_version
       Elasticsearch::VERSION
     end
@@ -615,7 +610,7 @@ EOC
     def send_bulk(data, tag, chunk, bulk_message_count, extracted_values, index)
       retries = 0
       begin
-        log.on_trace { log.trace "bulk request: #{data}" }
+       log.info "bulk request: #{data}" 
         uri = URI('http://elk-test:8080/logs/devops-test-2018.07.12')
         req = Net::HTTP::Post.new(uri)
         req.body = data
@@ -624,7 +619,7 @@ EOC
         res = Net::HTTP.start(uri.host, uri.port) {|http| http.request(req) }
 
         # response = client.bulk body: data, index: index
-        log.on_trace { log.trace "bulk response: #{response}" }
+         log.info "bulk response: #{response}" 
 
         if res.code != 200
           log.warn(res.message)

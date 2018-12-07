@@ -219,24 +219,7 @@ EOC
         log.warn "Consider to specify log_level with @log_level." unless log_level
       end
 
-      @last_seen_major_version =
-        if @verify_es_version_at_startup
-          begin
-            detect_es_major_version
-          rescue
-            log.warn "Could not connect Elasticsearch or obtain version. Assuming Elasticsearch #{@default_elasticsearch_version}."
-            @default_elasticsearch_version
-          end
-        else
-          @default_elasticsearch_version
-        end
-      if @last_seen_major_version == 6 && @type_name != DEFAULT_TYPE_NAME_ES_7x
-        log.info "Detected ES 6.x: ES 7.x will only accept `_doc` in type_name."
-      end
-      if @last_seen_major_version >= 7 && @type_name != DEFAULT_TYPE_NAME_ES_7x
-        log.warn "Detected ES 7.x or above: `_doc` will be used as the document `_type`."
-        @type_name = '_doc'.freeze
-      end
+      @last_seen_major_version = @default_elasticsearch_version
 
       if @validate_client_version
         if @last_seen_major_version != client_library_version.to_i
@@ -508,7 +491,7 @@ EOC
 
       tag = chunk.metadata.tag
       extracted_values = expand_placeholders(chunk.metadata)
-      @last_seen_major_version = detect_es_major_version rescue @default_elasticsearch_version
+      @last_seen_major_version = @default_elasticsearch_version
 
       chunk.msgpack_each do |time, record|
         next unless record.is_a? Hash

@@ -646,7 +646,7 @@ EOC
         if res.code != 200
           log.warn(res.message)
         end
-      
+      end
     end
   end
 end

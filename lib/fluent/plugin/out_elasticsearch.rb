@@ -4,6 +4,7 @@ require 'excon'
 require 'elasticsearch'
 require 'json'
 require 'uri'
+require 'net/http'
 begin
   require 'strptime'
 rescue LoadError
@@ -119,6 +120,7 @@ EOC
 elasticsearch gem v6.0.2 starts to use correct Content-Type. Please upgrade elasticserach gem and stop to use this option.
 see: https://github.com/elastic/elasticsearch-ruby/pull/514
 EOC
+    config_param :api_key, :string, :default => ''
     config_param :include_index_in_url, :bool, :default => false
     config_param :http_backend, :enum, list: [:excon, :typhoeus], :default => :excon
     config_param :validate_client_version, :bool, :default => false
@@ -341,7 +343,7 @@ EOC
                                                                               retry_on_failure: 5,
                                                                               logger: @transport_logger,
                                                                               transport_options: {
-                                                                                headers: { 'Content-Type' => @content_type.to_s },
+                                                                                headers: { 'Content-Type' => @content_type.to_s, 'Authorization' => @api_key.to_s },
                                                                                 request: { timeout: @request_timeout },
                                                                                 ssl: { verify: @ssl_verify, ca_file: @ca_file, version: @ssl_version }
                                                                               },
@@ -630,33 +632,21 @@ EOC
     def send_bulk(data, tag, chunk, bulk_message_count, extracted_values, index)
       retries = 0
       begin
-
         log.on_trace { log.trace "bulk request: #{data}" }
-        response = client.bulk body: data, index: index
+        uri = URI('http://elk-test:8080/logs/devops-test-2018.07.12')
+        req = Net::HTTP::Post.new(uri)
+        req.body = data
+        req.content_type = 'application/json'
+        req['Authorization'] = 'ELK devops-uepinruJhq82BAPWnjaw89sJ'
+        res = Net::HTTP.start(uri.host, uri.port) {|http| http.request(req) }
+
+        # response = client.bulk body: data, index: index
         log.on_trace { log.trace "bulk response: #{response}" }
 
-        if response['errors']
-          error = Fluent::Plugin::ElasticsearchErrorHandler.new(self)
-          error.handle_error(response, tag, chunk, bulk_message_count, extracted_values)
+        if res.code != 200
+          log.warn(res.message)
         end
-      rescue RetryStreamError => e
-        emit_tag = @retry_tag ? @retry_tag : tag
-        router.emit_stream(emit_tag, e.retry_stream)
-      rescue *client.transport.host_unreachable_exceptions => e
-        if retries < 2
-          retries += 1
-          @_es = nil
-          @_es_info = nil
-          log.warn "Could not push logs to Elasticsearch, resetting connection and trying again. #{e.message}"
-          sleep 2**retries
-          retry
-        end
-        raise ConnectionRetryFailure, "Could not push logs to Elasticsearch after #{retries} retries. #{e.message}"
-      rescue Exception
-        @_es = nil if @reconnect_on_error
-        @_es_info = nil if @reconnect_on_error
-        raise
-      end
+      
     end
   end
 end

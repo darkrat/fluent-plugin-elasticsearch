@@ -628,4 +628,3 @@ EOC
     end
   end
 end
-ё

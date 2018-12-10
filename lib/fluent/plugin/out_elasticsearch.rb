@@ -619,7 +619,7 @@ EOC
         res = Net::HTTP.start(uri.host, uri.port) {|http| http.request(req) }
 
         # response = client.bulk body: data, index: index
-         log.info "bulk response: #{response}" 
+        log.info "bulk response: #{res}" 
 
         if res.code != 200
           log.warn(res.message)
@@ -628,3 +628,4 @@ EOC
     end
   end
 end
+ё

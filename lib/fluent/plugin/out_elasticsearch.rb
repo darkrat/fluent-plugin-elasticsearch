@@ -610,7 +610,7 @@ EOC
     def send_bulk(data, tag, chunk, bulk_message_count, extracted_values, index)
       retries = 0
       begin
-       log.info "bulk request: #{data}" 
+        log.info "bulk request: #{data}" 
         uri = URI('http://elk-test:8080/logs/devops-test-2018.07.12')
         req = Net::HTTP::Post.new(uri)
         req.body = data
